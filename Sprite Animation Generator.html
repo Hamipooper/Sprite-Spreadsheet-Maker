@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite Animation Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background);
+            color: var(--color-text);
+        }
+
+        :root {
+            --color-background: #f5f5f5;
+            --color-surface: #ffffff;
+            --color-text: #1a1a1a;
+            --color-text-secondary: #666;
+            --color-primary: #2185d0;
+            --color-primary-hover: #1678c2;
+            --color-primary-active: #0f5fa0;
+            --color-success: #27ae60;
+            --color-error: #e74c3c;
+            --color-border: #ddd;
+            --color-focus-ring: rgba(33, 133, 208, 0.4);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-background: #1a1a1a;
+                --color-surface: #2d2d2d;
+                --color-text: #e8e8e8;
+                --color-text-secondary: #aaa;
+                --color-primary: #4a9eff;
+                --color-primary-hover: #3a8ee8;
+                --color-primary-active: #2a7ed8;
+                --color-border: #444;
+            }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 30px 0;
+            font-size: 28px;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--color-surface);
+            color: var(--color-text);
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="file"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-focus-ring);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--color-focus-ring);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            background: var(--color-primary-active);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(33, 133, 208, 0.1);
+        }
+
+        .btn-success {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #229954;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preview-section {
+            margin-top: 20px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .preview-card {
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: var(--color-background);
+        }
+
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background: var(--color-surface);
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-image img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status.loading {
+            background: rgba(33, 133, 208, 0.1);
+            color: var(--color-primary);
+            border: 1px solid rgba(33, 133, 208, 0.3);
+        }
+
+        .status.success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--color-success);
+            border: 1px solid rgba(39, 174, 96, 0.3);
+        }
+
+        .status.error {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--color-error);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: rgba(33, 133, 208, 0.05);
+            border-left: 4px solid var(--color-primary);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .step-indicator {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .step-indicator .current {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .download-link {
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .download-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Sprite Animation Generator</h1>
+
+        <!-- Setup Section -->
+        <div id="setupSection" class="card">
+            <h2>Step 1: Setup</h2>
+            
+            <div class="info-box">
+                ℹ️ <strong>Get your Hugging Face API Key:</strong> Visit <a href="https://huggingface.co/settings/tokens" target="_blank" style="color: var(--color-primary);">huggingface.co/settings/tokens</a>, create a new token, and paste it below.
+            </div>
+
+            <div class="form-group">
+                <label for="apiKey">Hugging Face API Key *</label>
+                <input type="text" id="apiKey" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" required>
+            </div>
+
+            <div class="form-group">
+                <label for="refImage">Reference Image (PNG/JPG) *</label>
+                <input type="file" id="refImage" accept="image/*" required>
+                <small style="color: var(--color-text-secondary); margin-top: 5px; display: block;">Upload an image to establish the art style (fountain, character, etc.)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="numSheets">How many animation frames? *</label>
+                <input type="number" id="numSheets" min="2" max="8" value="4" required>
+                <small style="color: var(--color-text-secondary); margin-top: 5px; display: block;">2-8 frames recommended for smooth animation</small>
+            </div>
+
+            <div class="form-group">
+                <label for="objectDesc">Object Description *</label>
+                <textarea id="objectDesc" placeholder="E.g., 'A water fountain with flowing water' or 'A pixel art character walking'"></textarea>
+                <small style="color: var(--color-text-secondary); margin-top: 5px; display: block;">Describe what you're animating</small>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="startGeneration()">Start Generation</button>
+            </div>
+        </div>
+
+        <!-- Generation Section -->
+        <div id="generationSection" class="card hidden">
+            <div class="step-indicator">
+                Frame <span class="current" id="currentFrame">1</span> of <span id="totalFrames">4</span>
+            </div>
+
+            <div id="statusMessage"></div>
+
+            <div class="preview-section">
+                <h3>Generated Frame</h3>
+                <div id="previewContainer" class="preview-grid">
+                    <div class="preview-card">
+                        <div id="framePreview" class="preview-image">
+                            <span style="color: var(--color-text-secondary);">Waiting to generate...</span>
+                        </div>
+                        <button id="downloadBtn" class="btn btn-success hidden" onclick="downloadCurrentFrame()">Download Frame</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group" style="margin-top: 20px;">
+                <button id="generateBtn" class="btn btn-primary" onclick="generateFrame()">Generate Frame</button>
+                <button id="nextBtn" class="btn btn-secondary hidden" onclick="nextFrame()">Next Frame →</button>
+                <button id="resetBtn" class="btn btn-secondary" onclick="resetApp()">Reset & Start Over</button>
+            </div>
+        </div>
+
+        <!-- Completed Section -->
+        <div id="completedSection" class="card hidden">
+            <h2>✅ Generation Complete!</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">
+                All frames have been generated. You can view and download them below:
+            </p>
+            <div id="completedGallery" class="preview-grid"></div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="resetApp()">Generate Another Set</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            apiKey: '',
+            refImage: null,
+            numSheets: 4,
+            objectDesc: '',
+            currentFrame: 1,
+            generatedFrames: [],
+            isGenerating: false
+        };
+
+        function startGeneration() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const refImage = document.getElementById('refImage').files[0];
+            const numSheets = parseInt(document.getElementById('numSheets').value);
+            const objectDesc = document.getElementById('objectDesc').value.trim();
+
+            if (!apiKey) {
+                alert('Please enter your Hugging Face API Key');
+                return;
+            }
+            if (!refImage) {
+                alert('Please upload a reference image');
+                return;
+            }
+            if (!objectDesc) {
+                alert('Please describe the object to animate');
+                return;
+            }
+
+            // Read reference image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.apiKey = apiKey;
+                state.refImage = e.target.result;
+                state.numSheets = numSheets;
+                state.objectDesc = objectDesc;
+                state.currentFrame = 1;
+                state.generatedFrames = [];
+
+                // Switch to generation view
+                document.getElementById('setupSection').classList.add('hidden');
+                document.getElementById('generationSection').classList.remove('hidden');
+                document.getElementById('completedSection').classList.add('hidden');
+                document.getElementById('totalFrames').textContent = numSheets;
+            };
+            reader.readAsDataURL(refImage);
+        }
+
+        async function generateFrame() {
+            if (state.isGenerating) return;
+
+            state.isGenerating = true;
+            document.getElementById('generateBtn').disabled = true;
+
+            const frameNum = state.currentFrame;
+            const promptText = `${state.objectDesc}, animation frame ${frameNum} of ${state.numSheets}, sprite sheet, pixel art style, consistent with reference`;
+
+            updateStatus('loading', `Generating frame ${frameNum}...`);
+
+            try {
+                const response = await fetch(
+                    'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large',
+                    {
+                        headers: { Authorization: `Bearer ${state.apiKey}` },
+                        method: 'POST',
+                        body: JSON.stringify({ inputs: promptText }),
+                    }
+                );
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Generation failed');
+                }
+
+                const result = await response.blob();
+                const imageUrl = URL.createObjectURL(result);
+
+                // Store frame
+                state.generatedFrames.push({
+                    num: frameNum,
+                    url: imageUrl,
+                    blob: result
+                });
+
+                // Display preview
+                document.getElementById('framePreview').innerHTML = `<img src="${imageUrl}" alt="Frame ${frameNum}">`;
+                document.getElementById('downloadBtn').classList.remove('hidden');
+
+                updateStatus('success', `Frame ${frameNum} generated successfully! Click "Download Frame" or "Next Frame →"`);
+
+                // Show next button
+                document.getElementById('nextBtn').classList.remove('hidden');
+                document.getElementById('generateBtn').disabled = true;
+
+            } catch (error) {
+                updateStatus('error', `Error: ${error.message}`);
+                console.error('Generation error:', error);
+            } finally {
+                state.isGenerating = false;
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function downloadCurrentFrame() {
+            const frame = state.generatedFrames[state.generatedFrames.length - 1];
+            if (!frame) return;
+
+            const link = document.createElement('a');
+            link.href = frame.url;
+            link.download = `sprite_frame_${frame.num}.png`;
+            link.click();
+        }
+
+        function nextFrame() {
+            if (state.currentFrame >= state.numSheets) {
+                // All frames complete
+                showCompletion();
+            } else {
+                state.currentFrame++;
+                document.getElementById('currentFrame').textContent = state.currentFrame;
+                document.getElementById('framePreview').innerHTML = '<span style="color: var(--color-text-secondary);">Waiting to generate...</span>';
+                document.getElementById('downloadBtn').classList.add('hidden');
+                document.getElementById('nextBtn').classList.add('hidden');
+                document.getElementById('generateBtn').disabled = false;
+                updateStatus('', '');
+            }
+        }
+
+        function showCompletion() {
+            document.getElementById('generationSection').classList.add('hidden');
+            document.getElementById('completedSection').classList.remove('hidden');
+
+            const gallery = document.getElementById('completedGallery');
+            gallery.innerHTML = '';
+
+            state.generatedFrames.forEach(frame => {
+                const card = document.createElement('div');
+                card.className = 'preview-card';
+                card.innerHTML = `
+                    <div class="preview-image">
+                        <img src="${frame.url}" alt="Frame ${frame.num}">
+                    </div>
+                    <p><strong>Frame ${frame.num}</strong></p>
+                    <button class="btn btn-success" onclick="downloadFrame(${frame.num})">
+                        Download
+                    </button>
+                `;
+                gallery.appendChild(card);
+            });
+        }
+
+        function downloadFrame(frameNum) {
+            const frame = state.generatedFrames.find(f => f.num === frameNum);
+            if (!frame) return;
+
+            const link = document.createElement('a');
+            link.href = frame.url;
+            link.download = `sprite_frame_${frameNum}.png`;
+            link.click();
+        }
+
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('statusMessage');
+            if (!message) {
+                statusEl.innerHTML = '';
+                return;
+            }
+
+            let icon = '';
+            if (type === 'loading') icon = '<span class="spinner"></span>';
+            else if (type === 'success') icon = '✓';
+            else if (type === 'error') icon = '✕';
+
+            statusEl.innerHTML = `<div class="status ${type}">${icon} ${message}</div>`;
+        }
+
+        function resetApp() {
+            state.apiKey = '';
+            state.refImage = null;
+            state.currentFrame = 1;
+            state.generatedFrames = [];
+            state.isGenerating = false;
+
+            document.getElementById('setupSection').classList.remove('hidden');
+            document.getElementById('generationSection').classList.add('hidden');
+            document.getElementById('completedSection').classList.add('hidden');
+            document.getElementById('statusMessage').innerHTML = '';
+            document.getElementById('apiKey').value = '';
+            document.getElementById('refImage').value = '';
+            document.getElementById('objectDesc').value = '';
+        }
+    </script>
+</body>
+</html>
