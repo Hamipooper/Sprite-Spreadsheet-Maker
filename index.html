@@ -443,7 +443,7 @@
 
             try {
                 // Using CORS proxy to bypass browser restrictions
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = 'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5';
                 
                 const response = await fetch(proxyUrl + apiUrl, {
