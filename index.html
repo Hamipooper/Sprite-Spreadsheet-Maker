@@ -437,23 +437,27 @@
             document.getElementById('generateBtn').disabled = true;
 
             const frameNum = state.currentFrame;
-            const promptText = `${state.objectDesc}, animation frame ${frameNum} of ${state.numSheets}, sprite sheet, pixel art style, consistent with reference`;
+            const promptText = `${state.objectDesc}, animation frame ${frameNum} of ${state.numSheets}, sprite sheet, pixel art style`;
 
-            updateStatus('loading', `Generating frame ${frameNum}...`);
+            updateStatus('loading', `Generating frame ${frameNum}... (This may take 30-60 seconds)`);
 
             try {
                 const response = await fetch(
-                    'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large',
+                    'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5',
                     {
-                        headers: { Authorization: `Bearer ${state.apiKey}` },
+                        headers: { 
+                            Authorization: `Bearer ${state.apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
                         method: 'POST',
                         body: JSON.stringify({ inputs: promptText }),
                     }
                 );
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Generation failed');
+                    const errorData = await response.json();
+                    const errorMsg = errorData.error || errorData.message || `HTTP ${response.status}`;
+                    throw new Error(errorMsg);
                 }
 
                 const result = await response.blob();
@@ -477,7 +481,20 @@
                 document.getElementById('generateBtn').disabled = true;
 
             } catch (error) {
-                updateStatus('error', `Error: ${error.message}`);
+                let errorMsg = error.message;
+                
+                // Better error messages
+                if (errorMsg.includes('401') || errorMsg.includes('Unauthorized')) {
+                    errorMsg = 'Invalid API Key. Check your Hugging Face token at hf.co/settings/tokens';
+                } else if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
+                    errorMsg = 'Rate limited. Wait a minute and try again.';
+                } else if (errorMsg.includes('503') || errorMsg.includes('Service Unavailable')) {
+                    errorMsg = 'Model loading. Try again in 30 seconds.';
+                } else if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
+                    errorMsg = 'Network/CORS error. Try refreshing the page or use a different browser.';
+                }
+                
+                updateStatus('error', `Error: ${errorMsg}`);
                 console.error('Generation error:', error);
             } finally {
                 state.isGenerating = false;
