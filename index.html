@@ -437,26 +437,32 @@
             document.getElementById('generateBtn').disabled = true;
 
             const frameNum = state.currentFrame;
-            const promptText = `${state.objectDesc}, animation frame ${frameNum} of ${state.numSheets}, sprite sheet, pixel art style`;
+            const promptText = `${state.objectDesc}, frame ${frameNum}, sprite animation`;
 
             updateStatus('loading', `Generating frame ${frameNum}... (This may take 30-60 seconds)`);
 
             try {
-                const response = await fetch(
-                    'https://hf.space/proxy/runwayml/stable-diffusion-v1-5',
-                    {
-                        headers: { 
-                            Authorization: `Bearer ${state.apiKey}`,
-                            'Content-Type': 'application/json'
-                        },
-                        method: 'POST',
-                        body: JSON.stringify({ inputs: promptText }),
-                    }
-                );
+                // Using CORS proxy to bypass browser restrictions
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const apiUrl = 'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5';
+                
+                const response = await fetch(proxyUrl + apiUrl, {
+                    headers: { 
+                        Authorization: `Bearer ${state.apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'POST',
+                    body: JSON.stringify({ inputs: promptText }),
+                });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    const errorMsg = errorData.error || errorData.message || `HTTP ${response.status}`;
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorData.message || errorMsg;
+                    } catch (e) {
+                        // Response might not be JSON
+                    }
                     throw new Error(errorMsg);
                 }
 
@@ -490,8 +496,8 @@
                     errorMsg = 'Rate limited. Wait a minute and try again.';
                 } else if (errorMsg.includes('503') || errorMsg.includes('Service Unavailable')) {
                     errorMsg = 'Model loading. Try again in 30 seconds.';
-                } else if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
-                    errorMsg = 'Network/CORS error. Try refreshing the page or use a different browser.';
+                } else if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    errorMsg = 'Network error. Please try again or use a different browser.';
                 }
                 
                 updateStatus('error', `Error: ${errorMsg}`);
